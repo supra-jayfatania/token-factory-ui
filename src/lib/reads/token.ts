@@ -1,77 +1,69 @@
 import type { PublicClient } from 'viem'
-import { customErc20Abi } from '../../config/abis/customErc20.abi'
-import { parseMintBudget } from '../units'
+import { rateLimitedMintERC20Abi } from '../../config/abis/rateLimitedMintERC20.abi'
 
 type TokenRead = { client: PublicClient; tokenAddress: `0x${string}` }
 
-export function readDecimals({ client, tokenAddress }: TokenRead) {
-  return client.readContract({
-    address: tokenAddress,
-    abi: customErc20Abi,
-    functionName: 'decimals',
-  })
+export function readName({ client, tokenAddress }: TokenRead) {
+  return client.readContract({ address: tokenAddress, abi: rateLimitedMintERC20Abi, functionName: 'name' })
 }
 
 export function readSymbol({ client, tokenAddress }: TokenRead) {
-  return client.readContract({
-    address: tokenAddress,
-    abi: customErc20Abi,
-    functionName: 'symbol',
-  })
+  return client.readContract({ address: tokenAddress, abi: rateLimitedMintERC20Abi, functionName: 'symbol' })
 }
 
-export function readName({ client, tokenAddress }: TokenRead) {
-  return client.readContract({
-    address: tokenAddress,
-    abi: customErc20Abi,
-    functionName: 'name',
-  })
+export function readDecimals({ client, tokenAddress }: TokenRead) {
+  return client.readContract({ address: tokenAddress, abi: rateLimitedMintERC20Abi, functionName: 'decimals' })
+}
+
+export function readOwner({ client, tokenAddress }: TokenRead) {
+  return client.readContract({ address: tokenAddress, abi: rateLimitedMintERC20Abi, functionName: 'owner' })
+}
+
+export function readTotalSupply({ client, tokenAddress }: TokenRead) {
+  return client.readContract({ address: tokenAddress, abi: rateLimitedMintERC20Abi, functionName: 'totalSupply' })
+}
+
+/** 0 means the token is uncapped. */
+export function readMaxSupply({ client, tokenAddress }: TokenRead) {
+  return client.readContract({ address: tokenAddress, abi: rateLimitedMintERC20Abi, functionName: 'maxSupply' })
 }
 
 export function readBalance({ client, tokenAddress }: TokenRead, account: `0x${string}`) {
   return client.readContract({
     address: tokenAddress,
-    abi: customErc20Abi,
+    abi: rateLimitedMintERC20Abi,
     functionName: 'balanceOf',
     args: [account],
   })
 }
 
-export function readAllowance(
-  { client, tokenAddress }: TokenRead,
-  owner: `0x${string}`,
-  spender: `0x${string}`,
-) {
-  return client.readContract({
-    address: tokenAddress,
-    abi: customErc20Abi,
-    functionName: 'allowance',
-    args: [owner, spender],
-  })
+export type MintLimits = { period: bigint; capPerPeriod: bigint; capPerRequest: bigint }
+
+export async function readMintLimits({ client, tokenAddress }: TokenRead): Promise<MintLimits> {
+  const [period, capPerPeriod, capPerRequest] = await Promise.all([
+    client.readContract({ address: tokenAddress, abi: rateLimitedMintERC20Abi, functionName: 'mintPeriod' }),
+    client.readContract({ address: tokenAddress, abi: rateLimitedMintERC20Abi, functionName: 'mintCapPerPeriod' }),
+    client.readContract({ address: tokenAddress, abi: rateLimitedMintERC20Abi, functionName: 'mintCapPerRequest' }),
+  ])
+  return { period, capPerPeriod, capPerRequest }
 }
 
-export async function readMintBudget({ client, tokenAddress }: TokenRead, account: `0x${string}`) {
-  const [remaining, resetsAt] = await client.readContract({
+export type MintWindow = {
+  /** Unix seconds; 0 when the account has never minted or its last window expired. */
+  windowStart: bigint
+  mintedInWindow: bigint
+  /** Left under mintCapPerPeriod — does NOT account for the separate per-request cap. */
+  remainingInWindow: bigint
+  /** 0 when the window has already expired. */
+  secondsUntilReset: bigint
+}
+
+export async function readMintWindow({ client, tokenAddress }: TokenRead, account: `0x${string}`): Promise<MintWindow> {
+  const [windowStart, mintedInWindow, remainingInWindow, secondsUntilReset] = await client.readContract({
     address: tokenAddress,
-    abi: customErc20Abi,
-    functionName: 'mintBudgetOf',
+    abi: rateLimitedMintERC20Abi,
+    functionName: 'mintWindowOf',
     args: [account],
   })
-  return parseMintBudget(remaining, resetsAt)
-}
-
-export function readMintingAllowed({ client, tokenAddress }: TokenRead) {
-  return client.readContract({
-    address: tokenAddress,
-    abi: customErc20Abi,
-    functionName: 'mintingAllowed',
-  })
-}
-
-export function readCreator({ client, tokenAddress }: TokenRead) {
-  return client.readContract({
-    address: tokenAddress,
-    abi: customErc20Abi,
-    functionName: 'creator',
-  })
+  return { windowStart, mintedInWindow, remainingInWindow, secondsUntilReset }
 }

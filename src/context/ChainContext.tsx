@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
-import { sepolia } from 'viem/chains'
+import type { Chain } from 'viem'
 import { supportedChains } from '../config/chains'
 import { getContracts } from '../config/contracts'
 import { getPublicClient } from '../lib/client'
@@ -7,18 +7,20 @@ import { getPublicClient } from '../lib/client'
 type ChainState = {
   chainId: number
   setChainId: (id: number) => void
-  chain: (typeof supportedChains)[number]
+  chain: Chain
   publicClient: ReturnType<typeof getPublicClient>
   contracts: ReturnType<typeof getContracts>
 }
 
 const ChainContext = createContext<ChainState | undefined>(undefined)
 
+/** Only mounted when at least one chain is configured — main.tsx shows a setup screen otherwise. */
 export function ChainProvider({ children }: { children: ReactNode }) {
-  const [chainId, setChainId] = useState<number>(sepolia.id)
+  const defaultChain = supportedChains[0]!
+  const [chainId, setChainId] = useState<number>(defaultChain.id)
 
   const value = useMemo<ChainState>(() => {
-    const chain = supportedChains.find((c) => c.id === chainId) ?? sepolia
+    const chain = supportedChains.find((c) => c.id === chainId) ?? defaultChain
     return {
       chainId: chain.id,
       setChainId,
@@ -26,7 +28,7 @@ export function ChainProvider({ children }: { children: ReactNode }) {
       publicClient: getPublicClient(chain),
       contracts: getContracts(chain.id),
     }
-  }, [chainId])
+  }, [chainId, defaultChain])
 
   return <ChainContext.Provider value={value}>{children}</ChainContext.Provider>
 }

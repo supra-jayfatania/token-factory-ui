@@ -1,16 +1,16 @@
-import { Coins, Droplet, Shield, Sliders, Wallet as WalletIcon } from 'lucide-react'
+import { Coins, Settings2, Sparkles, Wallet as WalletIcon } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { cn } from '../lib/cn'
 import { NetworkSwitcher } from './NetworkSwitcher'
 import { ThemeToggle } from './ThemeToggle'
 import { WalletConnectButton } from './WalletConnectButton'
+import { WrongNetworkBanner } from './WrongNetworkBanner'
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Faucet', icon: Droplet, end: true },
+  { to: '/', label: 'Mint', icon: Sparkles, end: true },
   { to: '/wallet', label: 'Wallet', icon: WalletIcon },
   { to: '/create', label: 'Create token', icon: Coins },
-  { to: '/admin/roles', label: 'Roles', icon: Shield },
-  { to: '/admin/mint-controls', label: 'Mint controls', icon: Sliders },
+  { to: '/manage', label: 'Manage', icon: Settings2 },
 ]
 
 export function AppLayout() {
@@ -26,7 +26,7 @@ export function AppLayout() {
             />
             <div className="leading-tight">
               <div className="text-xl font-bold tracking-tight text-text">
-                Token <span className="text-accent">Factory</span>
+                ERC Token <span className="text-accent">Factory</span>
               </div>
               <div className="hidden text-xs font-medium tracking-wide text-text-muted sm:block">
                 Create &amp; manage tokens on Supra EVM
@@ -57,6 +57,7 @@ export function AppLayout() {
             </NavLink>
           ))}
         </nav>
+        <WrongNetworkBanner />
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8">
         <Outlet />

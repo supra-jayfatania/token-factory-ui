@@ -1,45 +1,25 @@
-import type { PublicClient, WalletClient } from 'viem'
-import { customErc20Abi } from '../../config/abis/customErc20.abi'
+import { rateLimitedMintERC20Abi } from '../../config/abis/rateLimitedMintERC20.abi'
+import { writeAndWait, type TxClients } from './write'
 
-type TokenTx = {
-  walletClient: WalletClient
-  publicClient: PublicClient
-  tokenAddress: `0x${string}`
-}
+type TokenTx = TxClients & { tokenAddress: `0x${string}` }
 
-async function write(
-  { walletClient, publicClient, tokenAddress }: TokenTx,
-  functionName: Parameters<typeof walletClient.writeContract>[0]['functionName'],
-  args: readonly unknown[],
-) {
-  const account = walletClient.account
-  if (!account) throw new Error('Wallet is not connected')
-  const chain = walletClient.chain
-  if (!chain) throw new Error('Wallet has no chain configured')
+const write = ({ tokenAddress, ...clients }: TokenTx, functionName: string, args: readonly unknown[]) =>
+  writeAndWait(clients, tokenAddress, rateLimitedMintERC20Abi, functionName, args)
 
-  const hash = await walletClient.writeContract({
-    address: tokenAddress,
-    abi: customErc20Abi,
-    functionName,
-    args,
-    account,
-    chain,
-  } as Parameters<typeof walletClient.writeContract>[0])
-  return publicClient.waitForTransactionReceipt({ hash })
-}
+/** amount is already in the token's smallest unit — scale with `parseAmount` before calling. */
+export const mint = (tx: TokenTx, to: `0x${string}`, amount: bigint) => write(tx, 'mint', [to, amount])
 
-/** value is already in the token's smallest unit — scale with `parseTokenAmount` before calling. */
-export const mint = (tx: TokenTx, to: `0x${string}`, value: bigint) => write(tx, 'mint', [to, value])
-
-export const mintBatch = (tx: TokenTx, to: `0x${string}`[], values: bigint[]) =>
-  write(tx, 'mintBatch', [to, values])
-
-export const getFaucet = (tx: TokenTx) => write(tx, 'getFaucet', [])
-
-export const transfer = (tx: TokenTx, to: `0x${string}`, value: bigint) =>
-  write(tx, 'transfer', [to, value])
+export const transfer = (tx: TokenTx, to: `0x${string}`, value: bigint) => write(tx, 'transfer', [to, value])
 
 export const approve = (tx: TokenTx, spender: `0x${string}`, value: bigint) =>
   write(tx, 'approve', [spender, value])
 
-export const burn = (tx: TokenTx, value: bigint) => write(tx, 'burn', [value])
+/** Owner only. All three are replaced together; capPerRequest must be ≤ capPerPeriod. */
+export const setMintLimits = (tx: TokenTx, period: bigint, capPerPeriod: bigint, capPerRequest: bigint) =>
+  write(tx, 'setMintLimits', [period, capPerPeriod, capPerRequest])
+
+export const transferOwnership = (tx: TokenTx, newOwner: `0x${string}`) =>
+  write(tx, 'transferOwnership', [newOwner])
+
+/** Irreversible — nobody is exempt from the rate limits afterwards. */
+export const renounceOwnership = (tx: TokenTx) => write(tx, 'renounceOwnership', [])
