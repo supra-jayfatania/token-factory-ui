@@ -3,15 +3,14 @@
  * speaks plain http:// — browsers block that from the https:// site (mixed
  * content), and going through the app's own origin also sidesteps CORS.
  *
- * The node's URL comes from SUPRA_EVM_QA_RPC_UPSTREAM, a server-only env var
- * (no VITE_ prefix), so it lives in the Vercel settings rather than the repo
- * and never reaches the client bundle. The app points at this with
- * VITE_SUPRA_EVM_QA_RPC_URL=/api/rpc.
+ * The node's URL comes from VITE_SUPRA_EVM_QA_RPC_URL in the Vercel settings.
+ * The app itself never reads that var — it always calls /api/rpc
+ * (src/config/chains.ts); vite.config.ts serves the same path locally.
  */
 export async function POST(request: Request): Promise<Response> {
-  const upstream = process.env.SUPRA_EVM_QA_RPC_UPSTREAM
+  const upstream = process.env.VITE_SUPRA_EVM_QA_RPC_URL
   if (!upstream) {
-    return new Response('SUPRA_EVM_QA_RPC_UPSTREAM is not set.', { status: 500 })
+    return new Response('VITE_SUPRA_EVM_QA_RPC_URL is not set.', { status: 500 })
   }
 
   try {

@@ -6,7 +6,7 @@ export type ChainContracts = {
 }
 
 /**
- * RateLimitedMintERC20Factory address, from env like the chain id and RPC URL
+ * RateLimitedMintERC20Factory address, from env like the chain id and RPC node
  * since a redeploy changes it. A missing or malformed value (including a bad
  * mixed-case checksum, i.e. a typo) is treated as unconfigured, so the app
  * shows the setup screen instead of sending transactions to the wrong address.

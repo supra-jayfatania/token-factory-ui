@@ -9,8 +9,7 @@ export function ConfigMissing() {
         </span>
         <h1 className="text-lg font-semibold text-text">Network not configured</h1>
         <p className="mt-2 text-sm text-text-muted">
-          Set <code className="font-mono text-text">VITE_SUPRA_EVM_QA_CHAIN_ID</code> (a whole-number chain id),{' '}
-          <code className="font-mono text-text">VITE_SUPRA_EVM_QA_RPC_URL</code> and{' '}
+          Set <code className="font-mono text-text">VITE_SUPRA_EVM_QA_CHAIN_ID</code> (a whole-number chain id) and{' '}
           <code className="font-mono text-text">VITE_SUPRA_EVM_QA_FACTORY</code> (the factory's 0x address) in{' '}
           <code className="font-mono text-text">.env</code>, then restart the dev server.
         </p>
