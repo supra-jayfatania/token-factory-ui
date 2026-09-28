@@ -7,6 +7,7 @@ import App from './App.tsx'
 import { ConfigMissing } from './components/ConfigMissing.tsx'
 import { PasswordGate } from './components/PasswordGate.tsx'
 import { isSupraQaConfigured } from './config/chains.ts'
+import { isSupraQaFactoryConfigured } from './config/contracts.ts'
 import { ChainProvider } from './context/ChainContext.tsx'
 import { ThemeProvider, useTheme } from './context/ThemeContext.tsx'
 import { WalletProvider } from './context/WalletContext.tsx'
@@ -25,7 +26,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
       <PasswordGate>
-        {isSupraQaConfigured ? (
+        {isSupraQaConfigured && isSupraQaFactoryConfigured ? (
           <QueryClientProvider client={queryClient}>
             <ChainProvider>
               <WalletProvider>

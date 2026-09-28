@@ -1,7 +1,7 @@
-# Supra ERC Token Factory
+# Supra ER20C Token Factory
 
 Standalone dApp for the `RateLimitedMintERC20Factory` / `RateLimitedMintERC20`
-contracts on Supra EVM QA (factory `0x2fc3aDFf0F18E2feF3EC9902E0908b09b1a4d332`).
+contracts on Supra EVM QA. The factory address is set with `VITE_SUPRA_EVM_QA_FACTORY` (see Setup).
 
 - **Anyone** can create a token through the factory and becomes its owner.
 - **Anyone** can mint any factory token. Non-owners are limited per request
@@ -14,11 +14,11 @@ contracts on Supra EVM QA (factory `0x2fc3aDFf0F18E2feF3EC9902E0908b09b1a4d332`)
 
 ```bash
 pnpm install
-cp .env.example .env   # set VITE_SUPRA_EVM_QA_CHAIN_ID + VITE_SUPRA_EVM_QA_RPC_URL
+cp .env.example .env   # set VITE_SUPRA_EVM_QA_CHAIN_ID + VITE_SUPRA_EVM_QA_RPC_URL + VITE_SUPRA_EVM_QA_FACTORY
 pnpm dev
 ```
 
-Without the chain id and RPC URL the app shows a "Network not configured" screen.
+Without the chain id, RPC URL and factory address the app shows a "Network not configured" screen.
 
 ## Pages
 

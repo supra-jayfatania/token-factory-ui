@@ -26,7 +26,7 @@ export function AppLayout() {
             />
             <div className="leading-tight">
               <div className="text-xl font-bold tracking-tight text-text">
-                ERC Token <span className="text-accent">Factory</span>
+                ERC20 Token <span className="text-accent">Factory</span>
               </div>
               <div className="hidden text-xs font-medium tracking-wide text-text-muted sm:block">
                 Create &amp; manage tokens on Supra EVM
