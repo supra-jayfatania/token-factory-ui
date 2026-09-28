@@ -20,6 +20,21 @@ pnpm dev
 
 Without the chain id, RPC URL and factory address the app shows a "Network not configured" screen.
 
+### Deploying (Vercel)
+
+The QA RPC node only speaks plain `http://`, which browsers block from an
+`https://` page (mixed content). `api/rpc.ts` is a Vercel function that proxies
+RPC calls to the node from the app's own origin (so no CORS either). On Vercel set:
+
+| Variable | Value |
+|---|---|
+| `SUPRA_EVM_QA_RPC_UPSTREAM` | the node's real URL, e.g. `http://…/rpc/v1/eth/wallet_integration` (server-only, never in the bundle) |
+| `VITE_SUPRA_EVM_QA_RPC_URL` | `/api/rpc` |
+
+then redeploy (`VITE_*` values are baked in at build time). A relative RPC URL is
+resolved against the current site, so it works on preview URLs too. Locally,
+`pnpm dev` doesn't run `api/`, so keep the node's URL in `.env` directly.
+
 ## Pages
 
 | Route | Who | What |

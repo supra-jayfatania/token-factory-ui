@@ -8,8 +8,14 @@ import { defineChain, type Chain } from 'viem'
  * the app renders a "network not configured" screen instead.
  */
 const supraQaChainId = import.meta.env.VITE_SUPRA_EVM_QA_CHAIN_ID
-const supraQaRpcUrl = import.meta.env.VITE_SUPRA_EVM_QA_RPC_URL
 const supraQaExplorerUrl = import.meta.env.VITE_SUPRA_EVM_QA_EXPLORER_URL
+
+// A path like "/rpc" (the same-origin proxy in vercel.json) is resolved against
+// the current site, so one setting works on every deployment URL and the
+// wallet still gets the absolute URL that wallet_addEthereumChain requires.
+const supraQaRpcUrl = import.meta.env.VITE_SUPRA_EVM_QA_RPC_URL
+  ? new URL(import.meta.env.VITE_SUPRA_EVM_QA_RPC_URL, window.location.origin).href
+  : undefined
 
 // A malformed id (e.g. "supra-qa") would become NaN and leave every write
 // stuck on "switch network", so treat it the same as a missing one.
