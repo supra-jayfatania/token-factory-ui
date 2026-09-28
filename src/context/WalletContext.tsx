@@ -1,7 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createWalletClient, custom, type WalletClient } from 'viem'
 import { supportedChains } from '../config/chains'
-import type { WalletOption } from '../hooks/useWalletOptions'
+import { useWalletOptions, type WalletOption } from '../hooks/useWalletOptions'
 import type { Eip1193Provider } from '../lib/wallet/types'
 
 type WalletState = {
@@ -18,12 +18,44 @@ type WalletState = {
 
 const WalletContext = createContext<WalletState | undefined>(undefined)
 
+// Only the chosen wallet's id is stored — the wallet itself remembers that
+// this site is authorized, so on reload we just ask it for accounts again.
+const STORAGE_KEY = 'token-factory-ui:wallet'
+
+function readStoredWalletId(): string | undefined {
+  try {
+    return localStorage.getItem(STORAGE_KEY) ?? undefined
+  } catch {
+    return undefined
+  }
+}
+
+function storeWalletId(id: string | undefined) {
+  try {
+    if (id) localStorage.setItem(STORAGE_KEY, id)
+    else localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // Ignore — the wallet just won't reconnect after a reload.
+  }
+}
+
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [provider, setProvider] = useState<Eip1193Provider | undefined>(undefined)
   const [activeWalletId, setActiveWalletId] = useState<string | undefined>(undefined)
   const [address, setAddress] = useState<`0x${string}` | undefined>(undefined)
   const [chainId, setChainId] = useState<number | undefined>(undefined)
   const [isConnecting, setIsConnecting] = useState(false)
+  const [restoreId, setRestoreId] = useState(readStoredWalletId)
+  // Bumped by each restore attempt and by connect(); an in-flight restore only applies its result if
+  // it's still the latest. (An effect cleanup can't be used for this: the stored wallet's option can
+  // drop out of the list mid-restore — e.g. a fallback entry replaced once EIP-6963 announcements
+  // arrive — and that must not cancel the restore.)
+  const restoreGeneration = useRef(0)
+
+  // Wallets announce themselves asynchronously (EIP-6963), so the stored
+  // wallet's provider may only show up after a few renders.
+  const walletOptions = useWalletOptions()
+  const restoreProvider = restoreId ? walletOptions.find((o) => o.id === restoreId)?.provider : undefined
 
   const walletClient = useMemo(() => {
     if (!provider || !address || !chainId) return undefined
@@ -40,6 +72,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       if (option.installUrl) window.open(option.installUrl, '_blank', 'noopener,noreferrer')
       return
     }
+    restoreGeneration.current++
+    setRestoreId(undefined)
     setIsConnecting(true)
     try {
       const accounts = (await option.provider.request({
@@ -52,6 +86,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       setActiveWalletId(option.id)
       setAddress(accounts[0] as `0x${string}` | undefined)
       setChainId(parseInt(currentChainId, 16))
+      storeWalletId(option.id)
     } finally {
       setIsConnecting(false)
     }
@@ -77,6 +112,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setAddress(undefined)
     setProvider(undefined)
     setActiveWalletId(undefined)
+    storeWalletId(undefined)
     return revoked
   }, [provider])
 
@@ -111,6 +147,33 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     },
     [provider],
   )
+
+  // Silent reconnect after a reload: eth_accounts (unlike eth_requestAccounts)
+  // never opens a wallet popup and returns [] if the site is no longer authorized.
+  useEffect(() => {
+    if (!restoreId || !restoreProvider) return
+    const generation = ++restoreGeneration.current
+    const isLatest = () => restoreGeneration.current === generation
+    Promise.all([
+      restoreProvider.request({ method: 'eth_accounts' }) as Promise<string[]>,
+      restoreProvider.request({ method: 'eth_chainId' }) as Promise<string>,
+    ])
+      .then(([accounts, currentChainId]) => {
+        // No accounts can just mean the wallet is locked, so the stored id is
+        // kept and the next reload tries again; only an explicit disconnect clears it.
+        if (!isLatest() || !accounts[0]) return
+        setProvider(restoreProvider)
+        setActiveWalletId(restoreId)
+        setAddress(accounts[0] as `0x${string}`)
+        setChainId(parseInt(currentChainId, 16))
+      })
+      .catch(() => {
+        // Wallet locked or errored — leave it disconnected; the user can connect manually.
+      })
+      .finally(() => {
+        if (isLatest()) setRestoreId(undefined)
+      })
+  }, [restoreId, restoreProvider])
 
   useEffect(() => {
     if (!provider) return
