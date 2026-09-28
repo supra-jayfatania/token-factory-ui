@@ -14,26 +14,27 @@ contracts on Supra EVM QA. The factory address is set with `VITE_SUPRA_EVM_QA_FA
 
 ```bash
 pnpm install
-cp .env.example .env   # set VITE_SUPRA_EVM_QA_CHAIN_ID + VITE_SUPRA_EVM_QA_RPC_URL + VITE_SUPRA_EVM_QA_FACTORY
+cp .env.example .env   # set VITE_SUPRA_EVM_QA_CHAIN_ID + VITE_SUPRA_EVM_QA_FACTORY + VITE_SUPRA_EVM_QA_RPC_URL (see RPC proxy)
 pnpm dev
 ```
 
-Without the chain id, RPC URL and factory address the app shows a "Network not configured" screen.
+Without the chain id and factory address the app shows a "Network not configured" screen; without
+`VITE_SUPRA_EVM_QA_RPC_URL`, `pnpm dev` / `pnpm build` stop with an error.
 
-### Deploying (Vercel)
+### RPC proxy
 
-The QA RPC node only speaks plain `http://`, which browsers block from an
-`https://` page (mixed content). `api/rpc.ts` is a Vercel function that proxies
-RPC calls to the node from the app's own origin (so no CORS either). On Vercel set:
+The browser never calls the RPC node directly. The QA node is plain `http://`
+(blocked from an `https://` page as mixed content) and `rpc-proxy.supra.com`
+sends no CORS headers, so either one fails from a browser. Instead the app calls
+`/api/rpc` on its own origin, which forwards to `VITE_SUPRA_EVM_QA_RPC_URL`:
 
-| Variable | Value |
-|---|---|
-| `SUPRA_EVM_QA_RPC_UPSTREAM` | the node's real URL, e.g. `http://…/rpc/v1/eth/wallet_integration` (server-only, never in the bundle) |
-| `VITE_SUPRA_EVM_QA_RPC_URL` | `/api/rpc` |
+- `pnpm dev` / `pnpm preview`: the proxy in `vite.config.ts`
+- Vercel: the `api/rpc.ts` function
 
-then redeploy (`VITE_*` values are baked in at build time). A relative RPC URL is
-resolved against the current site, so it works on preview URLs too. Locally,
-`pnpm dev` doesn't run `api/`, so keep the node's URL in `.env` directly.
+Set `VITE_SUPRA_EVM_QA_RPC_URL` to the node's real URL (e.g.
+`https://rpc-proxy.supra.com/rpc/v1/eth/wallet_integration`) in `.env` and in the
+Vercel project settings. `/api/rpc` is resolved against the current site, so it
+also works on preview URLs.
 
 ## Pages
 
@@ -54,7 +55,7 @@ Mint and Manage accept `?token=0x…` to preselect a token.
    found by polling `allTokensLength()` every 15s, and the token's own
    rate-limit / supply-cap reverts show viem's raw message. The Mint and
    Create forms pre-check those limits client-side.
-3. **Supra EVM QA chain id / RPC URL** aren't in the doc — env vars required.
+3. **Supra EVM QA chain id / RPC node** aren't in the doc — env vars required.
 
 ## Structure
 
