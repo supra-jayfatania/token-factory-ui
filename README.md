@@ -12,8 +12,8 @@ contracts on Supra EVM QA. The factory address is set with `VITE_SUPRA_EVM_QA_FA
 
 ## Setup
 
-Requires Node.js 24.22.1+ on the 24.x LTS line (pinned in `.nvmrc`; the
-October 2026 Node.js security release). `engines.node` (`^24.22.1`) is also
+Requires Node.js 24.22.3+ on the 24.x LTS line (pinned in `.nvmrc`; the
+November 2026 Node.js security release). `engines.node` (`^24.22.3`) is also
 what selects the Node.js version Vercel builds with and runs `api/rpc.ts` on.
 
 ```bash
